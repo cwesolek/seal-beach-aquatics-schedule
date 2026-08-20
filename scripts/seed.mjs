@@ -11,6 +11,8 @@ const templates = [
   [6, "Weekend", "07:45", "12:15"], [0, "Weekend", "07:45", "12:15"],
 ];
 for (const [day, title, startsAt, endsAt] of templates) {
-  await sql`INSERT INTO recurring_shift_templates (day_of_week, title, starts_at, ends_at) SELECT ${day}, ${title}, ${startsAt}::time, ${endsAt}::time WHERE NOT EXISTS (SELECT 1 FROM recurring_shift_templates WHERE day_of_week=${day} AND title=${title} AND starts_at=${startsAt}::time)`;
+  await sql`INSERT INTO recurring_shift_templates (day_of_week, title, starts_at, ends_at, required_staff) SELECT ${day}, ${title}, ${startsAt}::time, ${endsAt}::time, 2 WHERE NOT EXISTS (SELECT 1 FROM recurring_shift_templates WHERE day_of_week=${day} AND title=${title} AND starts_at=${startsAt}::time)`;
 }
+await sql`UPDATE recurring_shift_templates SET required_staff=2 WHERE active=true`;
+await sql`UPDATE shifts SET required_staff=2 WHERE status != 'cancelled'`;
 console.log("Recurring shift templates seeded.");
