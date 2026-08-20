@@ -27,7 +27,7 @@ export default function Scheduler() {
   }
   if (!data) return <main className="loading">Loading the schedule…</main>;
   return <main>
-    <header><div className="topbar"><div><strong>Seal Beach Aquatics Schedule</strong><span>{data.demo ? "Interactive preview" : `${data.viewer.role} view`}</span></div><a href="/sign-in">Sign in</a></div></header>
+    <header><div className="topbar"><div><strong>Seal Beach Aquatics Schedule</strong><span>{data.demo ? "Interactive preview" : `${data.viewer.role} view`}</span></div>{data.demo ? <a href="/sign-in">Sign in</a> : <span>Signed in as {data.viewer.name}</span>}</div></header>
     <section className="wrap"><div className="title-row"><div><p className="eyebrow">Operations center</p><h1>Clear coverage, calmer days.</h1><p className="muted">Plan the pay period, coordinate changes, and keep every lifeguard in the loop.</p></div>{data.demo && <div className="preview-note">Sign in to use the secure staff schedule and save changes.</div>}</div>
       <nav className="tabs" aria-label="Scheduling areas">{tabs.map((item) => <button key={item} className={tab === item ? "tab active" : "tab"} onClick={() => setTab(item)}>{item}</button>)}</nav>
       {notice && <p className="notice">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></p>}
