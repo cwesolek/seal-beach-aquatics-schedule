@@ -75,5 +75,12 @@ CREATE TABLE IF NOT EXISTS swap_requests (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS pay_period_settings (
+  period_start DATE PRIMARY KEY,
+  timesheet_due_date DATE NOT NULL,
+  updated_by UUID REFERENCES staff(id),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS shifts_date_index ON shifts (shift_date);
 CREATE INDEX IF NOT EXISTS availability_staff_dates_index ON availability (staff_id, starts_on, ends_on);

@@ -1,4 +1,4 @@
-import { isoDate, weekStart } from "@/lib/date";
+import { defaultTimesheetDueDate, isoDate, payPeriodEnd, payPeriodStart } from "@/lib/date";
 
 const staff = [
   ["Alex Johnson", "manager"], ["Jordan Lee", "manager"], ["Maya Smith", "staff"],
@@ -7,12 +7,12 @@ const staff = [
 ];
 
 export function demoSnapshot() {
-  const monday = weekStart();
-  const dates = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(monday); date.setDate(date.getDate() + index); return isoDate(date);
+  const periodStart = payPeriodStart();
+  const dates = Array.from({ length: 14 }, (_, index) => {
+    const date = new Date(periodStart); date.setDate(date.getDate() + index); return isoDate(date);
   });
   const shiftRows = dates.flatMap((date, dayIndex) => {
-    const weekend = dayIndex === 5 || dayIndex === 6;
+    const weekend = dayIndex % 7 === 0 || dayIndex % 7 === 6;
     const shifts = weekend
       ? [["Weekend coverage", "07:45", "12:15", "Maya Smith"], ["Afternoon coverage", "12:15", "17:15", "Open"]]
       : [["Morning", "05:45", "10:45", "Alex Johnson"], ["Midday", "10:45", "15:15", "Noah Garcia"], ["Evening", "18:45", "21:15", dayIndex === 2 ? "Open" : "Taylor Brown"]];
@@ -21,6 +21,7 @@ export function demoSnapshot() {
   return {
     demo: true,
     viewer: { name: "Preview manager", role: "manager" },
+    payPeriod: { start: isoDate(periodStart), end: isoDate(payPeriodEnd()), dueDate: isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) },
     staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, role, active: true })),
     shifts: shiftRows,
     swaps: [{ id: "swap-1", requester: "Sam Wilson", shift: "Thu evening", recipient: "Riley Chen", status: "pending" }],
