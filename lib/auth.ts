@@ -17,7 +17,7 @@ export async function requireViewer(): Promise<Viewer> {
   const rows = await sql`
     INSERT INTO staff (clerk_user_id, name, email, role, active)
     VALUES (${userId}, ${name}, ${email}, ${role}, true)
-    ON CONFLICT (clerk_user_id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role
+    ON CONFLICT (clerk_user_id) DO UPDATE SET email = EXCLUDED.email, role = EXCLUDED.role
     RETURNING id, name, email, phone, role, active`;
   const member = rows[0] as Viewer & { active: boolean };
   if (!member.active) throw new Error("Your staff account is no longer active. Please contact a manager.");
