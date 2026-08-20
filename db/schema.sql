@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS recurring_shift_templates (
   day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
   starts_at TIME NOT NULL,
   ends_at TIME NOT NULL,
-  required_staff SMALLINT NOT NULL DEFAULT 1 CHECK (required_staff > 0),
+  required_staff SMALLINT NOT NULL DEFAULT 2 CHECK (required_staff > 0),
   active BOOLEAN NOT NULL DEFAULT true
 );
 
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS shifts (
   title TEXT NOT NULL,
   starts_at TIME NOT NULL,
   ends_at TIME NOT NULL,
-  required_staff SMALLINT NOT NULL DEFAULT 1 CHECK (required_staff > 0),
+  required_staff SMALLINT NOT NULL DEFAULT 2 CHECK (required_staff > 0),
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('draft', 'open', 'assigned', 'cancelled')),
   created_by UUID REFERENCES staff(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -84,3 +84,5 @@ CREATE TABLE IF NOT EXISTS pay_period_settings (
 
 CREATE INDEX IF NOT EXISTS shifts_date_index ON shifts (shift_date);
 CREATE INDEX IF NOT EXISTS availability_staff_dates_index ON availability (staff_id, starts_on, ends_on);
+ALTER TABLE recurring_shift_templates ALTER COLUMN required_staff SET DEFAULT 2;
+ALTER TABLE shifts ALTER COLUMN required_staff SET DEFAULT 2;
