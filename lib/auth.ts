@@ -1,7 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { database } from "@/lib/db";
 
-export type Viewer = { id: string; name: string; email: string; role: "manager" | "staff" };
+export type Viewer = { id: string; name: string; email: string; phone: string | null; role: "manager" | "staff" };
 
 export async function requireViewer(): Promise<Viewer> {
   const { userId } = await auth();
@@ -18,8 +18,9 @@ export async function requireViewer(): Promise<Viewer> {
     INSERT INTO staff (clerk_user_id, name, email, role, active)
     VALUES (${userId}, ${name}, ${email}, ${role}, true)
     ON CONFLICT (clerk_user_id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, role = EXCLUDED.role
-    RETURNING id, name, email, role`;
-  const member = rows[0] as { id: string; name: string; email: string; role: Viewer["role"] };
+    RETURNING id, name, email, phone, role, active`;
+  const member = rows[0] as Viewer & { active: boolean };
+  if (!member.active) throw new Error("Your staff account is no longer active. Please contact a manager.");
   return member;
 }
 
