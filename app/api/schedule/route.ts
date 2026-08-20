@@ -18,6 +18,6 @@ export async function GET() {
     ]);
     return NextResponse.json({ demo: false, viewer, staff, shifts, swaps, availability });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load schedule" }, { status: 401 });
+    return NextResponse.json({ ...demoSnapshot(), authRequired: true });
   }
 }
