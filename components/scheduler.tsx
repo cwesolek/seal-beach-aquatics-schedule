@@ -8,7 +8,7 @@ type ShiftTemplate = { id: string; title: string; dayOfWeek: number; startsAt: s
 type PayPeriod = { start: string; end: string; dueDate: string; defaultDueDate: string };
 type Snapshot = { demo: boolean; viewer: { name: string; email: string; phone: string | null; role: string }; staff: Staff[]; shifts: Shift[]; templates?: ShiftTemplate[]; swaps: { id: string; requester: string; shift: string; recipient: string; status: string }[]; availability: { staff: string; note: string }[]; payPeriod: PayPeriod; periodOffset?: number };
 
-const tabs = ["Dashboard", "Schedule", "Directory", "Availability", "Open shifts", "Swaps", "Hours"] as const;
+const tabs = ["Dashboard", "Schedule", "Staff", "Availability", "Open shifts", "Swaps", "Hours"] as const;
 type Tab = (typeof tabs)[number];
 
 function readableDate(date: string) { return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${date}T12:00:00`)); }
@@ -34,7 +34,7 @@ export default function Scheduler() {
       {notice && <p className="notice">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></p>}
       {tab === "Dashboard" && <Dashboard data={data} openCount={openShifts.length} hours={scheduledHours} setTab={setTab} api={api} />}
       {tab === "Schedule" && <Schedule data={data} api={api} periodOffset={periodOffset} setPeriodOffset={setPeriodOffset} />}
-      {tab === "Directory" && <Directory data={data} api={api} />}
+      {tab === "Staff" && <Directory data={data} api={api} />}
       {tab === "Availability" && <Availability data={data} api={api} />}
       {tab === "Open shifts" && <OpenShifts shifts={openShifts} api={api} />}
       {tab === "Swaps" && <Swaps data={data} api={api} />}
