@@ -23,6 +23,12 @@ export function demoSnapshot() {
     viewer: { name: "Preview manager", role: "manager" },
     payPeriod: { start: isoDate(periodStart), end: isoDate(payPeriodEnd()), dueDate: isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) },
     staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, role, active: true })),
+    templates: [
+      { id: "template-morning", title: "Morning", dayOfWeek: 1, startsAt: "05:45", endsAt: "10:45", requiredStaff: 1 },
+      { id: "template-midday", title: "Midday", dayOfWeek: 1, startsAt: "10:45", endsAt: "15:15", requiredStaff: 1 },
+      { id: "template-evening", title: "Evening", dayOfWeek: 1, startsAt: "18:45", endsAt: "21:15", requiredStaff: 1 },
+      { id: "template-weekend", title: "Weekend", dayOfWeek: 0, startsAt: "07:45", endsAt: "12:15", requiredStaff: 1 },
+    ],
     shifts: shiftRows,
     swaps: [{ id: "swap-1", requester: "Sam Wilson", shift: "Thu evening", recipient: "Riley Chen", status: "pending" }],
     availability: [{ staff: "Maya Smith", note: "Available weekdays after 10:30 AM" }, { staff: "Riley Chen", note: "Unavailable Saturday" }],
