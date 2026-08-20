@@ -16,7 +16,7 @@ export function demoSnapshot() {
     const shifts = weekend
       ? [["Weekend coverage", "07:45", "12:15", "Maya Smith"], ["Afternoon coverage", "12:15", "17:15", "Open"]]
       : [["Morning", "05:45", "10:45", "Alex Johnson"], ["Midday", "10:45", "15:15", "Noah Garcia"], ["Evening", "18:45", "21:15", dayIndex === 2 ? "Open" : "Taylor Brown"]];
-    return shifts.map(([title, startsAt, endsAt, assignee], index) => ({ id: `demo-${date}-${index}`, date, title, startsAt, endsAt, assignee, status: assignee === "Open" ? "open" : "assigned" }));
+    return shifts.map(([title, startsAt, endsAt, assignee], index) => ({ id: `demo-${date}-${index}`, date, title, startsAt, endsAt, assignee, requiredStaff: 2, assignedCount: assignee === "Open" ? 0 : 1, status: "open" }));
   });
   return {
     demo: true,
@@ -24,10 +24,10 @@ export function demoSnapshot() {
     payPeriod: { start: isoDate(periodStart), end: isoDate(payPeriodEnd()), dueDate: isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) },
     staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, role, active: true })),
     templates: [
-      { id: "template-morning", title: "Morning", dayOfWeek: 1, startsAt: "05:45", endsAt: "10:45", requiredStaff: 1 },
-      { id: "template-midday", title: "Midday", dayOfWeek: 1, startsAt: "10:45", endsAt: "15:15", requiredStaff: 1 },
-      { id: "template-evening", title: "Evening", dayOfWeek: 1, startsAt: "18:45", endsAt: "21:15", requiredStaff: 1 },
-      { id: "template-weekend", title: "Weekend", dayOfWeek: 0, startsAt: "07:45", endsAt: "12:15", requiredStaff: 1 },
+      { id: "template-morning", title: "Morning", dayOfWeek: 1, startsAt: "05:45", endsAt: "10:45", requiredStaff: 2 },
+      { id: "template-midday", title: "Midday", dayOfWeek: 1, startsAt: "10:45", endsAt: "15:15", requiredStaff: 2 },
+      { id: "template-evening", title: "Evening", dayOfWeek: 1, startsAt: "18:45", endsAt: "21:15", requiredStaff: 2 },
+      { id: "template-weekend", title: "Weekend", dayOfWeek: 0, startsAt: "07:45", endsAt: "12:15", requiredStaff: 2 },
     ],
     shifts: shiftRows,
     swaps: [{ id: "swap-1", requester: "Sam Wilson", shift: "Thu evening", recipient: "Riley Chen", status: "pending" }],
