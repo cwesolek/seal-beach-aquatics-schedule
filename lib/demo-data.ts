@@ -20,9 +20,9 @@ export function demoSnapshot() {
   });
   return {
     demo: true,
-    viewer: { name: "Preview manager", role: "manager" },
+    viewer: { name: "Preview manager", email: "manager@example.com", phone: "(562) 555-0148", role: "manager" },
     payPeriod: { start: isoDate(periodStart), end: isoDate(payPeriodEnd()), dueDate: isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) },
-    staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, role, active: true })),
+    staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, email: `${name.toLowerCase().replace(" ", ".")}@example.com`, phone: index < 2 ? "(562) 555-0148" : index === 5 ? null : "(562) 555-0120", role, active: true })),
     templates: [
       { id: "template-morning", title: "Morning", dayOfWeek: 1, startsAt: "05:45", endsAt: "10:45", requiredStaff: 2 },
       { id: "template-midday", title: "Midday", dayOfWeek: 1, startsAt: "10:45", endsAt: "15:15", requiredStaff: 2 },
