@@ -16,7 +16,7 @@ export function demoSnapshot() {
     const shifts = weekend
       ? [["Weekend coverage", "07:45", "12:15", "Maya Smith"], ["Afternoon coverage", "12:15", "17:15", "Open"]]
       : [["Morning", "05:45", "10:45", "Alex Johnson"], ["Midday", "10:45", "15:15", "Noah Garcia"], ["Evening", "18:45", "21:15", dayIndex === 2 ? "Open" : "Taylor Brown"]];
-    return shifts.map(([title, startsAt, endsAt, assignee], index) => ({ id: `demo-${date}-${index}`, date, title, startsAt, endsAt, assignee, requiredStaff: 2, assignedCount: assignee === "Open" ? 0 : 1, status: "open" }));
+    return shifts.map(([title, startsAt, endsAt, assignee], index) => ({ id: `demo-${date}-${index}`, date, title, startsAt, endsAt, assignee, assignedStaff: assignee === "Open" ? [] : [{ id: `assigned-${date}-${index}`, name: assignee }], requiredStaff: 2, assignedCount: assignee === "Open" ? 0 : 1, status: "open" }));
   });
   return {
     demo: true,
