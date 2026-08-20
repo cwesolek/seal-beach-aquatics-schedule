@@ -4,7 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import { useEffect, useMemo, useState } from "react";
 
 type Staff = { id: string; name: string; email: string; phone: string | null; role: string; active: boolean };
-type Shift = { id: string; templateId?: string | null; date: string; title: string; startsAt: string; endsAt: string; assignee: string; requiredStaff: number; assignedCount: number; status: string };
+type Shift = { id: string; templateId?: string | null; date: string; title: string; startsAt: string; endsAt: string; assignee: string; assignedStaff?: { id: string; name: string }[]; requiredStaff: number; assignedCount: number; status: string };
 type ShiftTemplate = { id: string; title: string; dayOfWeek: number; startsAt: string; endsAt: string; requiredStaff: number };
 type PayPeriod = { start: string; end: string; dueDate: string; defaultDueDate: string };
 type Snapshot = { demo: boolean; viewer: { name: string; email: string; phone: string | null; role: string }; staff: Staff[]; shifts: Shift[]; templates?: ShiftTemplate[]; swaps: { id: string; requester: string; shift: string; recipient: string; status: string }[]; availability: { staff: string; note: string }[]; payPeriod: PayPeriod; periodOffset?: number };
@@ -24,8 +24,10 @@ export default function Scheduler() {
   const scheduledHours = useMemo(() => (data?.shifts ?? []).reduce((total, shift) => total + duration(shift.startsAt, shift.endsAt) * shift.assignedCount, 0), [data]);
   async function api(path: string, method: string, body?: unknown) {
     if (data?.demo) { setNotice("Preview mode: sign in to save this change."); return; }
-    const response = await fetch(path, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
-    const payload = await response.json(); setNotice(payload.error || payload.message || (payload.ok ? "Saved." : "Something went wrong.")); if (payload.ok) await refresh();
+    try {
+      const response = await fetch(path, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const payload = await response.json().catch(() => ({})); setNotice(payload.error || payload.message || (payload.ok ? "Saved." : "Something went wrong.")); if (payload.ok) await refresh();
+    } catch { setNotice("That request could not be completed. Please try again."); }
   }
   if (!data) return <main className="loading">Loading the schedule…</main>;
   return <main>
@@ -72,7 +74,7 @@ function ShiftCard({ shift, manager, api }: { shift: Shift; manager: boolean; ap
 
 function StandardShiftSlots({ template, date, staff, api, shift }: { template: ShiftTemplate; date: string; staff: Staff[]; api: (path: string, method: string, body?: unknown) => Promise<void>; shift?: Shift }) {
   const [selections, setSelections] = useState(["", ""]); const [saving, setSaving] = useState(false);
-  const assignedNames = shift?.assignee === "Open" || !shift ? [] : shift.assignee.split(", ");
+  const assignedNames = shift?.assignedStaff?.map((person) => person.name) ?? (shift?.assignee === "Open" || !shift ? [] : shift.assignee.split(", "));
   useEffect(() => { setSelections(["", ""]); setSaving(false); }, [shift?.id, shift?.assignedCount]);
   async function assign(position: number) { const staffId = selections[position]; if (!staffId || saving) return; setSaving(true); await api("/api/shifts", "POST", shift ? { action: "assignToShift", shiftId: shift.id, staffId } : { action: "assignTemplate", templateId: template.id, date, staffId }); setSelections((current) => current.map((value, index) => index === position ? "" : value)); setSaving(false); }
   return <section className="shift-slots"><div className="shift-slots-heading"><strong>{template.title}</strong><span>{template.startsAt}–{template.endsAt} · {duration(template.startsAt, template.endsAt)} hrs · {shift?.assignedCount ?? 0} of {template.requiredStaff} assigned</span></div>{Array.from({ length: template.requiredStaff }, (_, position) => { const assignedName = assignedNames[position]; return <div className="assignment-row" key={position}>{assignedName ? <p className="assignment-filled"><strong>Position {position + 1}</strong><span>{assignedName}</span></p> : <><label className="assignment-control"><span>Position {position + 1}</span><select aria-label={`Assign ${template.title} position ${position + 1}`} value={selections[position] ?? ""} onChange={(event) => setSelections((current) => current.map((value, index) => index === position ? event.target.value : value))} disabled={saving}><option value="">Assign a staff member…</option>{staff.map((person) => <option key={person.id} value={person.id}>{person.name}{person.role === "manager" ? " (Manager)" : ""}</option>)}</select></label><button type="button" onClick={() => assign(position)} disabled={saving || !selections[position]}>Assign</button></>}</div>; })}{shift && <ShiftTimeEditor shift={shift} api={api} />}</section>;
