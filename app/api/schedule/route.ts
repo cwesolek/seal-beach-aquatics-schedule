@@ -4,12 +4,16 @@ import { requireViewer } from "@/lib/auth";
 import { demoSnapshot } from "@/lib/demo-data";
 import { defaultTimesheetDueDate, isoDate, payPeriodEnd, payPeriodStart } from "@/lib/date";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!hasDatabase()) return NextResponse.json(demoSnapshot());
   try {
     const viewer = await requireViewer();
-    const start = isoDate(payPeriodStart());
-    const end = isoDate(payPeriodEnd());
+    const requestedOffset = Number(new URL(request.url).searchParams.get("periodOffset") ?? 0);
+    const periodOffset = Number.isInteger(requestedOffset) ? Math.max(-4, Math.min(0, requestedOffset)) : 0;
+    const periodReference = payPeriodStart();
+    periodReference.setDate(periodReference.getDate() + periodOffset * 14);
+    const start = isoDate(payPeriodStart(periodReference));
+    const end = isoDate(payPeriodEnd(periodReference));
     const endExclusive = new Date(`${end}T12:00:00`); endExclusive.setDate(endExclusive.getDate() + 1);
     const sql = database();
     const [staff, shifts, swaps, availability, settings] = await Promise.all([
@@ -19,7 +23,7 @@ export async function GET() {
       sql`SELECT staff.name AS staff, COALESCE(availability.note, availability.status) AS note FROM availability JOIN staff ON staff.id=availability.staff_id WHERE availability.ends_on >= ${start}::date ORDER BY availability.created_at DESC LIMIT 8`,
       sql`SELECT to_char(timesheet_due_date, 'YYYY-MM-DD') AS "dueDate" FROM pay_period_settings WHERE period_start = ${start}::date LIMIT 1`,
     ]);
-    return NextResponse.json({ demo: false, viewer, staff, shifts, swaps, availability, payPeriod: { start, end, dueDate: settings[0]?.dueDate ?? isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) } });
+    return NextResponse.json({ demo: false, viewer, staff, shifts, swaps, availability, periodOffset, payPeriod: { start, end, dueDate: settings[0]?.dueDate ?? isoDate(defaultTimesheetDueDate(periodReference)), defaultDueDate: isoDate(defaultTimesheetDueDate(periodReference)) } });
   } catch (error) {
     return NextResponse.json({ ...demoSnapshot(), authRequired: true });
   }
