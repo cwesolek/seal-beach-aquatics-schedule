@@ -17,15 +17,27 @@ if (!process.env.MANAGER_ACCOUNT_SETUP) {
     if (!response.ok) throw new Error(`Account setup failed (${response.status}): ${result.errors?.map(e => `${e.code}: ${e.message}`).join("; ") || "Authentication service error"}`);
     return result;
   };
+  const encodedHost = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.split("_").slice(2).join("_");
+  if (!encodedHost) throw new Error("The public authentication configuration is missing.");
+  const host = Buffer.from(encodedHost, "base64").toString().replace(/\$$/, "");
+  const environmentResponse = await fetch(`https://${host}/v1/environment`);
+  if (!environmentResponse.ok) throw new Error("Unable to verify email-code sign-in settings.");
+  const environment = await environmentResponse.json();
+  const attributes = (environment.response?.user_settings ?? environment.user_settings).attributes;
+  if (!attributes.email_address.first_factors.includes("email_code")) throw new Error("Enable email-code sign-in before provisioning this passwordless account.");
+  const names = {
+    ...(attributes.first_name.enabled ? { first_name: firstName } : {}),
+    ...(attributes.last_name.enabled ? { last_name: lastName } : {}),
+  };
   const matches = await api(`/users?email_address=${encodeURIComponent(email.toLowerCase())}&limit=2`);
   if (matches.length > 1) throw new Error("More than one matching account; manual review required.");
   let user = matches[0];
   if (!user) user = await api("/users", "POST", {
-    email_address: [email.toLowerCase()], first_name: firstName, last_name: lastName,
+    email_address: [email.toLowerCase()], ...names,
     skip_password_requirement: true, public_metadata: { role: "manager" },
   });
   else user = await api(`/users/${user.id}`, "PATCH", {
-    first_name: firstName, last_name: lastName,
+    ...names,
     public_metadata: { ...user.public_metadata, role: "manager" },
   });
   const sql = neon(process.env.DATABASE_URL);
