@@ -10,18 +10,44 @@ export async function PATCH(request: Request) {
   if (!hasDatabase()) return NextResponse.json({ error: "Preview mode: sign in to save this change." }, { status: 401 });
   try {
     const viewer = await requireViewer();
-    const body = await request.json() as { action?: string; name?: string; phone?: string; staffId?: string };
+    const body = await request.json() as { action?: string; firstName?: string; lastName?: string; phone?: string; staffId?: string };
     const sql = database();
 
+    if (body.action === "approveProfile" || body.action === "rejectProfile") {
+      const manager = await requireManager();
+      const staffId = body.staffId?.trim();
+      if (!staffId) return NextResponse.json({ error: "Choose a profile to review." }, { status: 400 });
+      const approvalStatus = body.action === "approveProfile" ? "approved" : "rejected";
+      const result = await sql`UPDATE staff SET approval_status=${approvalStatus} WHERE id=${staffId}::uuid AND id<>${manager.id} AND role='staff' AND approval_status='pending' RETURNING id`;
+      if (!result[0]) return NextResponse.json({ error: "That profile has already been reviewed or is unavailable." }, { status: 404 });
+      return NextResponse.json({ ok: true, message: approvalStatus === "approved" ? "Staff profile approved." : "Profile access rejected." });
+    }
+
     if (body.action === "updateProfile") {
-      const name = body.name?.trim().replace(/\s+/g, " ") ?? "";
+      const firstName = body.firstName?.trim().replace(/\s+/g, " ") ?? "";
+      const lastName = body.lastName?.trim().replace(/\s+/g, " ") ?? "";
+      const name = `${firstName} ${lastName}`.trim();
       const phone = body.phone?.trim() ?? "";
-      if (!name) return NextResponse.json({ error: "Add the name you want your team to see." }, { status: 400 });
-      if (name.length > 80) return NextResponse.json({ error: "Please use a shorter displayed name." }, { status: 400 });
+      if (!firstName || !lastName) return NextResponse.json({ error: "Add both your first and last name." }, { status: 400 });
+      if (firstName.length > 50 || lastName.length > 50) return NextResponse.json({ error: "Please use shorter first and last names." }, { status: 400 });
       if (!phone) return NextResponse.json({ error: "Add a phone number so your team can reach you." }, { status: 400 });
       if (phone.length > 40) return NextResponse.json({ error: "Please use a shorter phone number." }, { status: 400 });
-      await sql`UPDATE staff SET name = ${name}, phone = ${phone} WHERE id = ${viewer.id}`;
+      await sql`UPDATE staff SET name=${name}, first_name=${firstName}, last_name=${lastName}, phone=${phone} WHERE id=${viewer.id}`;
       return NextResponse.json({ ok: true, message: "Your profile was saved." });
+    }
+
+    if (body.action === "updateStaffName") {
+      await requireManager();
+      const staffId = body.staffId?.trim();
+      const firstName = body.firstName?.trim().replace(/\s+/g, " ") ?? "";
+      const lastName = body.lastName?.trim().replace(/\s+/g, " ") ?? "";
+      if (!staffId) return NextResponse.json({ error: "Choose a staff member to update." }, { status: 400 });
+      if (!firstName || !lastName) return NextResponse.json({ error: "Add both the staff member's first and last name." }, { status: 400 });
+      if (firstName.length > 50 || lastName.length > 50) return NextResponse.json({ error: "Please use shorter first and last names." }, { status: 400 });
+      const name = `${firstName} ${lastName}`;
+      const updated = await sql`UPDATE staff SET name=${name}, first_name=${firstName}, last_name=${lastName} WHERE id=${staffId}::uuid AND role='staff' AND active=true RETURNING id`;
+      if (!updated[0]) return NextResponse.json({ error: "That active staff profile could not be updated." }, { status: 404 });
+      return NextResponse.json({ ok: true, message: `${name}'s name was updated.` });
     }
 
     if (body.action === "deactivate") {

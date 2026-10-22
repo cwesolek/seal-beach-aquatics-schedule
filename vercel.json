@@ -1,4 +1,4 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm db:push && pnpm db:seed && pnpm build"
+  "buildCommand": "pnpm test && node scripts/verify-schedule.mjs && pnpm build"
 }

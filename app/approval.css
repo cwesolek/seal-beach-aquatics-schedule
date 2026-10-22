@@ -1,0 +1,992 @@
+.approval-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.approval-card {
+  width: min(540px, 100%);
+  padding: 30px;
+}
+
+.approval-card h1 {
+  margin: 0 0 12px;
+  color: var(--navy);
+}
+
+.approval-identity {
+  display: grid;
+  gap: 4px;
+  margin: 20px 0;
+  padding: 14px;
+  background: #f4f7fb;
+  border-radius: 8px;
+}
+
+.approval-identity span,
+.profile-approval span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.profile-approvals {
+  margin: 0 0 14px;
+  border-left: 4px solid #d48b0e;
+}
+
+.profile-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+
+.profile-approval > div {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-approval > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-approval .danger {
+  margin-left: 0;
+}
+
+.swap-alert {
+  align-items: center;
+  background: #fff8de;
+  border-color: #f1dd9d;
+  color: #805700;
+}
+
+.swap-alert button {
+  padding: 7px 10px;
+  background: #805700;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.shift-time-controls,
+.employee-time-list {
+  display: grid;
+  gap: 8px;
+}
+
+.employee-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #dbe2ea;
+  font-size: 11px;
+}
+
+.employee-time-form {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: end;
+  gap: 7px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #dbe2ea;
+  border-radius: 7px;
+}
+
+.employee-time-form label {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.employee-time-form .recurring-choice,
+.employee-time-form > div {
+  grid-column: 1 / -1;
+}
+
+.employee-time-form > div {
+  display: flex;
+  gap: 7px;
+}
+
+.quarter-hour-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+}
+
+.my-shift-actions,
+.full-day-segment {
+  display: grid;
+  gap: 9px;
+}
+
+.full-day-segment {
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+}
+
+.full-day-segment > strong {
+  font-size: 12px;
+  color: var(--navy);
+}
+
+.full-day-cover {
+  justify-self: start;
+}
+
+.full-day-cover-form {
+  padding: 11px;
+  background: #f6fbff;
+  border: 1px solid #bcdaf5;
+  border-radius: 8px;
+}
+
+/* Keep the growing manager builder readable inside each day column. */
+.schedule-grid {
+  grid-template-columns: repeat(7, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.day {
+  padding: 14px;
+}
+
+.shift,
+.shift-slots {
+  padding: 11px;
+  margin: 10px 0;
+}
+
+.shift-slots {
+  gap: 12px;
+}
+
+.shift-slots-heading {
+  padding-bottom: 2px;
+}
+
+.aquatics-capacity-control {
+  display: grid;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid #78add7;
+  border-radius: 7px;
+  background: #eaf5ff;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.aquatics-capacity-control select {
+  width: 100%;
+  padding: 8px;
+  font-size: 13px;
+}
+
+.aquatics-capacity-control small {
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.assignment-row {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 7px;
+  padding-top: 10px;
+  border-top: 1px solid #dbe2ea;
+}
+
+.assignment-row:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.assignment-control,
+.assignment-control > label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.assignment-control select,
+.employee-time-form select {
+  width: 100%;
+  min-width: 0;
+}
+
+.assignment-row > button {
+  justify-self: start;
+}
+
+.recurring-choice {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 7px !important;
+  line-height: 1.35;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.recurring-choice input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.assignment-filled {
+  padding: 9px;
+}
+
+.assignment-filled strong,
+.assignment-filled span,
+.employee-time-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.recurring-remove-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 37, 69, 0.48);
+}
+
+.recurring-remove-dialog {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(11, 37, 69, 0.3);
+}
+
+.recurring-remove-dialog h3,
+.recurring-remove-dialog p {
+  margin: 0;
+}
+
+.recurring-remove-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recurring-remove-dialog-actions .danger {
+  margin-left: 0;
+}
+
+.directory-person {
+  flex-wrap: wrap;
+}
+
+.directory-manager-actions {
+  display: flex !important;
+  align-items: center;
+  gap: 6px !important;
+  margin-left: auto;
+}
+
+.directory-manager-actions .danger {
+  margin-left: 0;
+}
+
+.staff-name-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 7px;
+  flex: 1 0 100%;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.staff-name-editor label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.staff-name-editor input {
+  min-width: 0;
+  width: 100%;
+}
+
+.employee-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.employee-time-row button {
+  justify-self: start;
+}
+
+.employee-time-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  padding: 10px;
+}
+
+.employee-time-form > strong,
+.employee-time-form .recurring-choice,
+.employee-time-form > div {
+  grid-column: 1 / -1;
+}
+
+.employee-time-form > div {
+  flex-wrap: wrap;
+}
+
+.shift-manager-actions {
+  display: grid;
+  gap: 8px;
+  padding-top: 3px;
+}
+
+.delete-shift {
+  justify-self: start;
+  margin-left: 0;
+}
+
+.time-editor button {
+  white-space: normal;
+}
+
+.aquatics-week-controls {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #bcdaf5;
+  border-radius: 9px;
+  background: #f6fbff;
+}
+
+.aquatics-week-controls > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aquatics-week-controls span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.aquatics-week-controls .danger {
+  margin-left: 0;
+}
+
+@media (max-width: 850px) {
+  .schedule-grid {
+    grid-template-columns: repeat(7, 260px);
+  }
+}
+
+@media (max-width: 540px) {
+  .profile-approval {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-time-form {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-time-form > strong,
+  .employee-time-form .recurring-choice,
+  .employee-time-form > div {
+    grid-column: 1;
+  }
+
+  .aquatics-week-controls > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .staff-name-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.print-roster-table-wrap {
+  overflow-x: auto;
+}
+
+.print-roster table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.print-roster th,
+.print-roster td {
+  padding: 7px;
+  border: 1px solid var(--line);
+}
+
+.print-roster thead th {
+  text-align: center;
+  background: #edf3f8;
+}
+
+.print-roster thead th:first-child,
+.print-roster thead th:nth-child(2),
+.print-roster tbody th {
+  text-align: left;
+}
+
+.print-roster thead span,
+.print-roster thead small {
+  display: block;
+}
+
+.print-roster tbody th {
+  background: #f8fafc;
+}
+
+.print-roster tbody td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.timesheet-area {
+  display: grid;
+  gap: 14px;
+}
+
+.timesheet-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.timesheet-staff-picker {
+  display: grid;
+  grid-template-columns: minmax(220px, .75fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.timesheet-staff-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.timesheet-staff {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1f2937;
+  text-align: left;
+}
+
+.timesheet-staff small {
+  color: #64748b;
+}
+
+.timesheet-staff.active {
+  border-color: #0b5d78;
+  background: #e8f3f7;
+  color: #083f52;
+}
+
+.employee-timesheet-print {
+  overflow: hidden;
+}
+
+.timesheet-header {
+  display: grid;
+  grid-template-columns: 70px 1fr minmax(260px, auto);
+  align-items: center;
+  gap: 18px;
+  padding: 8px 0 28px;
+  background: #fff;
+  color: #111;
+}
+
+.timesheet-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-style: italic;
+}
+
+.timesheet-header > div:last-child {
+  display: grid;
+  gap: 18px;
+}
+
+.timesheet-seal {
+  width: 58px;
+  height: 58px;
+  background: url("/city-seal.png") center / contain no-repeat;
+}
+
+.timesheet-period {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 4px;
+}
+
+.timesheet-period span {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.timesheet-table-label {
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+}
+
+.timesheet-grid-wrap {
+  overflow-x: auto;
+}
+
+.timesheet-grid {
+  width: 100%;
+  min-width: 1250px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.timesheet-grid th,
+.timesheet-grid td {
+  height: 34px;
+  padding: 2px;
+  border: 1px solid #111;
+  text-align: center;
+}
+
+.timesheet-grid thead th {
+  background: #e5e7eb;
+}
+
+.timesheet-grid th:nth-last-child(4),
+.timesheet-grid th:nth-last-child(3),
+.timesheet-grid td:nth-last-child(4),
+.timesheet-grid td:nth-last-child(3) {
+  width: 72px;
+  background: #c7c7c7;
+}
+
+.timesheet-grid th:nth-last-child(2),
+.timesheet-grid td:nth-last-child(2) {
+  width: 62px;
+}
+
+.timesheet-grid .fund-heading,
+.timesheet-grid .fund-cell {
+  width: 235px;
+}
+
+.timesheet-grid .fund-heading {
+  background: #c7c7c7;
+  font-size: 15px;
+}
+
+.timesheet-grid .fund-cell {
+  padding-left: 6px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.timesheet-grid input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 1px;
+  border: 1px solid #b7c0ca;
+  border-radius: 3px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.prior-adjustment-input {
+  position: relative;
+  display: block;
+}
+
+.prior-adjustment-input input {
+  padding-right: 15px;
+}
+
+.prior-stepper-controls {
+  position: absolute;
+  inset: 1px 1px 1px auto;
+  display: flex;
+  width: 14px;
+  flex-direction: column;
+}
+
+.prior-stepper-controls button {
+  min-width: 0;
+  height: 50%;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid #b7c0ca;
+  border-radius: 0;
+  background: #eef2f5;
+  color: #334155;
+  font-size: 6px;
+  line-height: 1;
+}
+
+.timesheet-grid .timesheet-section-bar th {
+  height: 14px;
+  padding: 0;
+  background: #111;
+}
+
+.timesheet-grid .timesheet-blank-row td {
+  height: 34px;
+}
+
+.timesheet-grid .timesheet-subtotal td {
+  height: 24px;
+  background: #e5e7eb;
+  font-weight: 800;
+}
+
+.timesheet-print-value {
+  display: none;
+}
+
+.timesheet-grid .line-total {
+  font-weight: 800;
+}
+
+.timesheet-grid .extra-hours-heading th {
+  height: 24px;
+  background: #111;
+  color: #fff;
+  font-weight: 500;
+}
+
+.timesheet-signatures {
+  display: grid;
+  grid-template-columns: 2fr .7fr 2fr .7fr 1fr .7fr;
+  align-items: end;
+  gap: 16px;
+  margin-top: 34px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.timesheet-signatures > span {
+  padding: 7px 4px;
+  border-top: 1px solid #111;
+  background: #d1d1d1;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.timesheet-signatures > b {
+  padding: 18px 6px;
+  border: 3px double #111;
+  font-size: 14px;
+}
+
+.timesheet-instruction {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 7px;
+  background: #111;
+  color: #fff;
+  font-weight: 800;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.4in;
+  }
+
+  body {
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body > main > header,
+  body[data-print-target="roster"] .wrap > *:not(.print-roster),
+  body:not([data-print-target]) .wrap > *:not(.print-roster),
+  body[data-print-target="timesheet"] .wrap > *:not(.timesheet-area) {
+    display: none !important;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-controls {
+    display: none !important;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-staff-picker {
+    display: none !important;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-roster {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-roster .eyebrow {
+    display: none;
+  }
+
+  .print-roster h2 {
+    margin: 0 0 8px;
+    font-size: 13pt;
+    text-align: center;
+  }
+
+  .print-roster > div {
+    overflow: visible !important;
+  }
+
+  .print-roster table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 8pt !important;
+    line-height: 1.15;
+  }
+
+  .print-roster th,
+  .print-roster td {
+    height: 0.25in;
+    padding: 2px !important;
+    border: 1px solid #46515d;
+    vertical-align: middle;
+    overflow-wrap: normal;
+  }
+
+  .print-roster thead th {
+    background: #dfe8f0;
+    text-align: center;
+  }
+
+  .print-roster thead th span,
+  .print-roster thead th small {
+    display: block;
+    font: inherit;
+    font-weight: 700;
+  }
+
+  .print-roster th:first-child,
+  .print-roster th:nth-child(2) {
+    width: 0.95in;
+    text-align: left;
+  }
+
+  .print-roster tbody th {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .print-roster tbody td {
+    text-align: center;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.15px;
+    white-space: nowrap;
+  }
+
+  .print-roster tbody tr:nth-child(even) th,
+  .print-roster tbody tr:nth-child(even) td {
+    background: #eef3f7;
+  }
+
+  .print-roster tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body[data-print-target="timesheet"] .employee-timesheet-print {
+    width: 9.55in;
+    max-width: 9.55in;
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-header {
+    grid-template-columns: .65in 1fr 3.2in;
+    gap: .15in;
+    padding: 0 0 .22in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-header h1 {
+    font-size: 20pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-header > div:last-child {
+    gap: .16in;
+    font-size: 10pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-seal {
+    width: .5in;
+    height: .5in;
+    font-size: 9pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-period {
+    display: grid;
+    grid-template-columns: 2.35in 3.76in 1fr;
+    align-items: end;
+    gap: 0;
+    font-size: 9pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-period span {
+    grid-column: 2;
+    width: 3.76in;
+    gap: .12in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-table-label {
+    margin-top: .08in;
+    font-size: 8pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid-wrap {
+    overflow: visible;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid {
+    width: 9.55in;
+    min-width: 0;
+    font-size: 7pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-day-column {
+    width: .4364in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-adjustment-column {
+    width: .54in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-total-column {
+    width: .48in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-fund-column {
+    width: 1.88in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid th,
+  body[data-print-target="timesheet"] .timesheet-grid td {
+    height: .27in;
+    padding: 1px;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid th:nth-last-child(4),
+  body[data-print-target="timesheet"] .timesheet-grid th:nth-last-child(3),
+  body[data-print-target="timesheet"] .timesheet-grid td:nth-last-child(4),
+  body[data-print-target="timesheet"] .timesheet-grid td:nth-last-child(3) {
+    width: .54in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid th:nth-last-child(2),
+  body[data-print-target="timesheet"] .timesheet-grid td:nth-last-child(2) {
+    width: .48in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid .fund-heading,
+  body[data-print-target="timesheet"] .timesheet-grid .fund-cell {
+    width: 1.88in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid input {
+    display: none;
+  }
+
+  body[data-print-target="timesheet"] .prior-stepper-controls {
+    display: none;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid .timesheet-section-bar th {
+    height: .13in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid .timesheet-blank-row td {
+    height: .27in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-grid .timesheet-subtotal td {
+    height: .18in;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-print-value {
+    display: block;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-signatures {
+    margin-top: .3in;
+    gap: .12in;
+    font-size: 7pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-signatures > b {
+    padding: .12in .04in;
+    font-size: 9pt;
+  }
+
+  body[data-print-target="timesheet"] .timesheet-instruction {
+    margin-top: .1in;
+    padding: .05in;
+    font-size: 8pt;
+  }
+}

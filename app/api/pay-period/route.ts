@@ -18,9 +18,11 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const viewer = await requireManager();
-    const { dueDate } = await request.json();
+    const { dueDate, periodStart } = await request.json();
     if (!validDate(dueDate)) return NextResponse.json({ error: "Enter a valid timesheet due date." }, { status: 400 });
-    const start = isoDate(payPeriodStart());
+    if (!validDate(periodStart)) return NextResponse.json({ error: "Choose a valid pay period." }, { status: 400 });
+    const start = isoDate(payPeriodStart(new Date(`${periodStart}T12:00:00`)));
+    if (start !== periodStart) return NextResponse.json({ error: "That is not a valid pay-period start date." }, { status: 400 });
     const sql = database();
     await sql`INSERT INTO pay_period_settings (period_start, timesheet_due_date, updated_by)
       VALUES (${start}::date, ${dueDate}::date, ${viewer.id})
