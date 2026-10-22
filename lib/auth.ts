@@ -18,7 +18,7 @@ export async function requireViewer(): Promise<Viewer> {
   if (!email) throw new Error("Your account needs an email address.");
   const managerEmails = (process.env.MANAGER_EMAILS ?? "")
     .split(",").map((entry) => entry.trim().toLowerCase()).filter(Boolean);
-  const role: Viewer["role"] = managerEmails.includes(email) ? "manager" : "staff";
+  const role: Viewer["role"] = managerEmails.includes(email) || clerkUser?.publicMetadata.role === "manager" ? "manager" : "staff";
   const firstName = clerkUser?.firstName?.trim() || email.split("@")[0];
   const lastName = clerkUser?.lastName?.trim() || "";
   const name = [firstName, lastName].filter(Boolean).join(" ");
