@@ -86,3 +86,6 @@ CREATE INDEX IF NOT EXISTS shifts_date_index ON shifts (shift_date);
 CREATE INDEX IF NOT EXISTS availability_staff_dates_index ON availability (staff_id, starts_on, ends_on);
 ALTER TABLE recurring_shift_templates ALTER COLUMN required_staff SET DEFAULT 2;
 ALTER TABLE shifts ALTER COLUMN required_staff SET DEFAULT 2;
+
+-- A null target is a cover; a target exchanges the two existing assignments.
+ALTER TABLE swap_requests ADD COLUMN IF NOT EXISTS target_shift_id UUID REFERENCES shifts(id) ON DELETE CASCADE;
