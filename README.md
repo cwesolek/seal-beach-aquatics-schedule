@@ -23,6 +23,6 @@ The accepting browser refreshes the schedule and pending count immediately. Othe
 
 ### Deploying this change
 
-Before deploying this version, run `pnpm db:push` against the target database. This adds the nullable `swap_requests.target_shift_id` column; existing requests remain covers and their records are preserved. Apply this schema update before merging to `main` if Vercel deploys automatically. No production database changes are performed by the build.
+The build runs `scripts/migrate-swaps.mjs` when `DATABASE_URL` is configured. It adds the nullable `swap_requests.target_shift_id` column before compiling the new app. The migration is additive and safe to repeat; existing requests remain covers and their records are preserved. A migration failure stops deployment. Local/demo builds without a database skip this step. `pnpm db:push` also includes the same column for manual setup.
 
 Run `pnpm test` for the database-backed acceptance regression tests and `pnpm build` for the production build. Tests use an isolated in-memory PostgreSQL engine and never connect to the live schedule.
