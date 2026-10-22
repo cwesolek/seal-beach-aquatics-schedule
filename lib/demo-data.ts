@@ -20,7 +20,7 @@ export function demoSnapshot() {
   });
   return {
     demo: true,
-    viewer: { name: "Preview manager", email: "manager@example.com", phone: "(562) 555-0148", role: "manager" },
+    viewer: { id: "preview-manager", name: "Preview manager", email: "manager@example.com", phone: "(562) 555-0148", role: "manager" },
     payPeriod: { start: isoDate(periodStart), end: isoDate(payPeriodEnd()), dueDate: isoDate(defaultTimesheetDueDate()), defaultDueDate: isoDate(defaultTimesheetDueDate()) },
     staff: staff.map(([name, role], index) => ({ id: `staff-${index}`, name, email: `${name.toLowerCase().replace(" ", ".")}@example.com`, phone: index < 2 ? "(562) 555-0148" : index === 5 ? null : "(562) 555-0120", role, active: true })),
     templates: [
@@ -30,7 +30,7 @@ export function demoSnapshot() {
       { id: "template-weekend", title: "Weekend", dayOfWeek: 0, startsAt: "07:45", endsAt: "12:15", requiredStaff: 2 },
     ],
     shifts: shiftRows,
-    swaps: [{ id: "swap-1", requester: "Sam Wilson", shift: "Thu evening", recipient: "Riley Chen", status: "pending" }],
+    swaps: [{ id: "swap-1", requesterId: "staff-4", recipientId: "staff-6", targetShiftId: null, targetShift: null, requester: "Sam Wilson", shift: "Thu evening", recipient: "Riley Chen", status: "pending" }],
     availability: [{ staff: "Maya Smith", note: "Available weekdays after 10:30 AM" }, { staff: "Riley Chen", note: "Unavailable Saturday" }],
   };
 }
