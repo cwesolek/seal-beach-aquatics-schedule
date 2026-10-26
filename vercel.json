@@ -1,4 +1,4 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "node scripts/provision-manager.mjs && pnpm test && node scripts/verify-schedule.mjs && pnpm build"
+  "buildCommand": "node scripts/migrate-request-inbox.mjs && node scripts/provision-manager.mjs && pnpm test && node scripts/verify-schedule.mjs && pnpm build"
 }

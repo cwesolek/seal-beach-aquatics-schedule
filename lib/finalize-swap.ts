@@ -47,9 +47,22 @@ export function finalizeSwapQueries(sql: ReturnType<typeof database>, id: string
       FROM transferred t JOIN shifts s ON s.id=t.shift_id WHERE s.template_id IS NOT NULL
       ON CONFLICT (template_id,staff_id,shift_date) DO NOTHING RETURNING staff_id
     )
-    UPDATE swap_requests r SET status='approved',recipient_accepted_at=now(),reviewed_by=${viewerId}::uuid,reviewed_at=now()
+    UPDATE swap_requests r SET manager_dismissed_at=NULL,status='approved',recipient_accepted_at=now(),reviewed_by=${viewerId}::uuid,reviewed_at=now()
     FROM eligible e WHERE r.id=e.id AND (SELECT count(*) FROM transferred)=
       CASE WHEN e.recipient_shift_id IS NULL AND e.additional_shift_id IS NULL THEN 1 ELSE 2 END
     RETURNING r.id`,
+    sql`UPDATE timesheet_entries entry SET hours=COALESCE((
+      SELECT ROUND(SUM(EXTRACT(epoch FROM (upper(merged.slot)-lower(merged.slot)))) / 3600 * 2) / 2
+      FROM (
+        SELECT range_agg(tsrange(s.shift_date + CASE WHEN a.actual_starts_at IS NOT NULL AND a.actual_ends_at IS NOT NULL THEN a.actual_starts_at ELSE COALESCE(a.scheduled_starts_at,s.starts_at) END,
+          s.shift_date + CASE WHEN a.actual_starts_at IS NOT NULL AND a.actual_ends_at IS NOT NULL THEN a.actual_ends_at ELSE COALESCE(a.scheduled_ends_at,s.ends_at) END,'[)')) AS slots
+        FROM shift_assignments a JOIN shifts s ON s.id=a.shift_id
+        WHERE a.staff_id=entry.staff_id AND to_char(s.shift_date,'YYYY-MM-DD')=entry.entry_key AND s.status<>'cancelled'
+      ) ranges CROSS JOIN LATERAL unnest(ranges.slots) merged(slot)
+    ),0)
+    FROM swap_requests r WHERE r.id=${id}::uuid AND r.status='approved' AND r.reviewed_at=now() AND r.reviewed_by=${viewerId}::uuid
+      AND entry.staff_id IN (r.requester_id,r.recipient_id) AND entry.row_type='regular'
+      AND EXISTS (SELECT 1 FROM shifts s WHERE s.id IN (r.shift_id,r.recipient_shift_id,r.additional_shift_id)
+        AND entry.entry_key=to_char(s.shift_date,'YYYY-MM-DD') AND s.shift_date BETWEEN entry.period_start AND entry.period_start+13)`,
   ];
 }
