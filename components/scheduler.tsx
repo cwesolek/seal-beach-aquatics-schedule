@@ -9,7 +9,7 @@ type Shift = { id: string; templateId?: string | null; date: string; title: stri
 type ShiftTemplate = { id: string; title: string; dayOfWeek: number; startsAt: string; endsAt: string; requiredStaff: number };
 type PayPeriod = { start: string; end: string; dueDate: string; defaultDueDate: string };
 type HourAdjustment = { id: string; shiftId: string; staffId: string; staff: string; shiftTitle: string; shiftDate: string; scheduledStartsAt: string; scheduledEndsAt: string; requestedStartsAt: string; requestedEndsAt: string; note: string | null; status: string };
-type Swap = { id: string; shiftId?: string; recipientShiftId?: string | null; additionalShiftId?: string | null; requesterId?: string; recipientId?: string | null; recipientAccepted?: boolean; requester: string; shift: string; recipient: string; recipientShift?: string | null; additionalShift?: string | null; note?: string | null; status: string; managerDismissed?: boolean; acceptedAt?: string | null };
+type Swap = { id: string; shiftId?: string; recipientShiftId?: string | null; additionalShiftId?: string | null; requesterId?: string; recipientId?: string | null; recipientAccepted?: boolean; requester: string; shift: string; recipient: string; recipientShift?: string | null; additionalShift?: string | null; note?: string | null; status: string; managerDismissed?: boolean; acceptedAt?: string | null; emailSentAt?: string | null; emailFailedAt?: string | null };
 type PendingProfile = { id: string; name: string; email: string; requestedOn: string };
 type AvailabilityNote = { id: string; staff: string; note: string; status: string; startsOn: string; endsOn: string };
 type TimesheetEntry = { staffId?: string; rowType: TimesheetRowType; entryKey: string; hours: number };
@@ -458,10 +458,10 @@ function OpenShifts({ shifts, api }: { shifts: Shift[]; api: (path: string, meth
 function Swaps({ data, api }: { data: Snapshot; api: (path: string, method: string, body?: unknown) => Promise<boolean> }) {
   const [busy, setBusy] = useState<string | null>(null);
   const manager = data.viewer.role === "manager";
-  async function act(id: string, method: string) {
+  async function act(id: string, method: string, suffix?: string) {
     if (busy) return;
     setBusy(id);
-    try { await api(`/api/swaps/${id}${method === "POST" ? "/accept" : ""}`, method); }
+    try { await api(`/api/swaps/${id}${suffix ?? (method === "POST" ? "/accept" : "")}`, method); }
     finally { setBusy(null); }
   }
   return <section className="card"><p className="eyebrow">Shift changes</p><h2>{manager ? "Pending and accepted covers / swaps" : "Requests for acceptance"}</h2>
@@ -476,7 +476,9 @@ function Swaps({ data, api }: { data: Snapshot; api: (path: string, method: stri
         {fullDay && <span>Plus: {swap.additionalShift ?? "Midday shift"}</span>}
         {exchange && <span>{swap.recipient}&apos;s shift: {swap.recipientShift ?? "Shift unavailable"}</span>}
         <b>{pending ? `Pending acceptance by ${swap.recipient}` : `Accepted by ${swap.recipient} — schedule and timesheets updated`}</b>
+        {pending && (manager || swap.requesterId === data.viewer.id) && <span>{swap.emailSentAt ? "Email sent" : swap.emailFailedAt ? "Email failed — in-app request delivered" : "In-app request delivered"}</span>}
       </div><div>
+        {pending && !swap.emailSentAt && (manager || swap.requesterId === data.viewer.id) && <button className="secondary" disabled={Boolean(busy)} onClick={() => act(swap.id,"POST","/email")}>Retry email</button>}
         {canAccept && <button disabled={Boolean(busy)} onClick={() => act(swap.id,"POST")}>{busy === swap.id ? "Updating…" : `Accept ${exchange ? "swap" : "cover"}`}</button>}
         {manager && !swap.managerDismissed && <button className="secondary" disabled={Boolean(busy)} onClick={() => act(swap.id,"DELETE")}>Delete message</button>}
       </div></div>;

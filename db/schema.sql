@@ -176,3 +176,6 @@ ALTER TABLE recurring_staff_assignments ADD COLUMN IF NOT EXISTS scheduled_start
 ALTER TABLE recurring_staff_assignments ADD COLUMN IF NOT EXISTS scheduled_ends_at TIME;
 
 ALTER TABLE swap_requests ADD COLUMN IF NOT EXISTS manager_dismissed_at TIMESTAMPTZ;
+ALTER TABLE swap_requests ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMPTZ;
+ALTER TABLE swap_requests ADD COLUMN IF NOT EXISTS email_failed_at TIMESTAMPTZ;
+ALTER TABLE swap_requests ADD COLUMN IF NOT EXISTS email_provider_id TEXT;
