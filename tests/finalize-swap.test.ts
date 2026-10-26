@@ -32,7 +32,7 @@ async function fixture(kind: "cover" | "swap" | "full-day" = "cover") {
     const queries = finalizeSwapQueries(compile as unknown as ReturnType<typeof database>,requestId,actor) as unknown as Query[];
     return db.transaction(async tx => {
       let rows: unknown[] = [];
-      for (const q of queries) rows = (await tx.query(q.text,q.values)).rows;
+      for (const [index,q] of queries.entries()) { const result = await tx.query(q.text,q.values); if (index === 3) rows = result.rows; }
       return rows;
     });
   };
@@ -108,4 +108,33 @@ test("database failure rolls back transfers, exclusions, and pending status toge
     assert.equal((await f.db.query("SELECT * FROM recurring_assignment_exclusions")).rows.length,0);
     assert.equal((await f.db.query("SELECT id FROM swap_requests WHERE status='pending'")).rows.length,1);
   } finally {await f.db.close();}
+});
+
+for (const kind of ["cover","swap","full-day"] as const) {
+  test(`${kind} recalculates saved regular timesheet cells while preserving other entries`,async () => {
+    const f = await fixture(kind);
+    try {
+      for (const staffId of [a,b]) {
+        await f.db.query("INSERT INTO timesheet_entries (staff_id,period_start,row_type,entry_key,hours) VALUES ($1,'2026-10-18','regular',$2,8),($1,'2026-10-18','sick',$2,2),($1,'2026-10-18','regular','prior',1),($1,'2026-10-18','regular','2026-10-20',7)",[staffId,date]);
+      }
+      assert.equal((await f.accept()).length,1);
+      const cells=(await f.db.query<{staff_id:string;hours:string}>("SELECT staff_id,hours FROM timesheet_entries WHERE entry_key=$1 AND row_type='regular' ORDER BY staff_id",[date])).rows;
+      assert.deepEqual(cells.map(row=>Number(row.hours)),kind === "cover" ? [0,7] : kind === "swap" ? [3.5,3.5] : [0,7]);
+      assert.equal((await f.db.query("SELECT * FROM timesheet_entries WHERE (row_type='sick' AND hours=2) OR (entry_key='prior' AND hours=1) OR (entry_key='2026-10-20' AND hours=7)")).rows.length,6);
+    }finally{await f.db.close();}
+  });
+}
+
+test("manager messages persist after acceptance and dismissal never undoes assignments",async () => {
+  const f=await fixture();
+  try {
+    await f.db.exec("UPDATE swap_requests SET manager_dismissed_at=now()");
+    assert.equal((await f.accept()).length,1);
+    assert.equal((await f.db.query("SELECT id FROM swap_requests WHERE status IN ('pending','approved') AND manager_dismissed_at IS NULL")).rows.length,1);
+    const before=await f.assignments();
+    await f.db.exec("UPDATE swap_requests SET manager_dismissed_at=now()");
+    assert.equal((await f.db.query("SELECT id FROM swap_requests WHERE manager_dismissed_at IS NULL")).rows.length,0);
+    assert.deepEqual(await f.assignments(),before);
+    assert.equal((await f.db.query("SELECT id FROM swap_requests WHERE status='approved'")).rows.length,1);
+  }finally{await f.db.close();}
 });

@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { database } from "@/lib/db";
+import { validateShiftRequest, type ShiftRequestInput } from "@/lib/shift-request-input";
+import { deliverRequestEmail } from "@/lib/deliver-request-email";
 import { requireViewer } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const viewer = await requireViewer(); const body = await request.json() as { shiftId?: string; recipientShiftId?: string; additionalShiftId?: string; recipientId?: string; note?: string };
-    if (!body.shiftId || !body.recipientId) return NextResponse.json({ error: "Choose the coworker you want to ask." }, { status: 400 });
-    if (body.recipientShiftId === body.shiftId) return NextResponse.json({ error: "Choose two different shifts." }, { status: 400 });
-    if (body.additionalShiftId === body.shiftId || body.additionalShiftId === body.recipientShiftId) return NextResponse.json({ error: "Choose different shifts for the request." }, { status: 400 });
-    if (body.additionalShiftId && body.recipientShiftId) return NextResponse.json({ error: "A full-day coverage request cannot also be a shift exchange." }, { status: 400 });
-    if (body.recipientId === viewer.id) return NextResponse.json({ error: "Choose another staff member." }, { status: 400 });
+    const viewer = await requireViewer(); const body = await request.json() as ShiftRequestInput;
+    const inputError = validateShiftRequest(body, viewer.id);
+    if (inputError) return NextResponse.json({ error: inputError }, { status: 400 });
     const sql = database();
     const assigned = await sql`SELECT 1 FROM shift_assignments WHERE shift_id=${body.shiftId}::uuid AND staff_id=${viewer.id}`;
     if (!assigned.length) return NextResponse.json({ error: "You can only offer one of your assigned shifts." }, { status: 403 });
@@ -31,7 +30,9 @@ export async function POST(request: Request) {
       const recipientConflict = await sql`SELECT 1 FROM shift_assignments WHERE shift_id=${body.additionalShiftId}::uuid AND staff_id=${body.recipientId}::uuid LIMIT 1`;
       if (recipientConflict[0]) return NextResponse.json({ error: "That coworker is already working part of this full day." }, { status: 409 });
     }
-    await sql`INSERT INTO swap_requests (shift_id, recipient_shift_id, additional_shift_id, requester_id, recipient_id, note) VALUES (${body.shiftId}::uuid, ${body.recipientShiftId || null}::uuid, ${body.additionalShiftId || null}::uuid, ${viewer.id}, ${body.recipientId}::uuid, ${body.note?.trim() || null})`;
-    return NextResponse.json({ ok: true, message: body.recipientShiftId ? "Shift exchange requested. It will finalize when the other employee accepts." : body.additionalShiftId ? "Full-day coverage requested. Both shifts will transfer when the other employee accepts." : "Coverage requested. It will finalize when the other employee accepts." });
+    const created = await sql`INSERT INTO swap_requests (shift_id, recipient_shift_id, additional_shift_id, requester_id, recipient_id) VALUES (${body.shiftId}::uuid, ${body.recipientShiftId || null}::uuid, ${body.additionalShiftId || null}::uuid, ${viewer.id}, ${body.recipientId}::uuid) RETURNING id`;
+    const emailed = await deliverRequestEmail(created[0].id);
+    const message = body.recipientShiftId ? "Shift exchange requested. It will finalize when the other employee accepts." : body.additionalShiftId ? "Full-day coverage requested. Both shifts will transfer when the other employee accepts." : "Coverage requested. It will finalize when the other employee accepts.";
+    return NextResponse.json({ ok: true, message: `${message} ${emailed ? "An email was sent to the selected employee." : "The in-app request is saved, but email could not be sent. Use Retry email in Swaps."}` });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create swap request" }, { status: 401 }); }
 }
