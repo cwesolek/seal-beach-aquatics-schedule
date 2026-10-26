@@ -546,7 +546,7 @@
 .timesheet-seal {
   width: 58px;
   height: 58px;
-  background: url("/city-seal.png") center / contain no-repeat;
+  background: url("/city-seal.png?v=2") center / contain no-repeat;
 }
 
 .timesheet-period {
