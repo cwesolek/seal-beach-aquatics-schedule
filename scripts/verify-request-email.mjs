@@ -22,3 +22,14 @@ if (process.env.VERCEL_ENV === 'preview' && process.env.RESEND_API_KEY && domain
   if (!response.ok || !result.id) throw new Error(`Request email provider check failed: HTTP ${response.status}`);
   console.log('REQUEST_EMAIL_CHECK: provider accepted synthetic email');
 }
+// Check the batch transport used by schedule announcements against a synthetic inbox.
+if (process.env.VERCEL_ENV === 'preview' && process.env.RESEND_API_KEY && domain) {
+  await new Promise(resolve=>setTimeout(resolve,1100));
+  const response=await fetch('https://api.resend.com/emails/batch',{
+    method:'POST', headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':'sba-schedule-post-batch-check-v1'},
+    body:JSON.stringify([{from:`SBA Schedule <schedule@${domain}>`,to:['delivered@resend.dev'],subject:'SBA schedule post connection check',text:'Synthetic schedule announcement check. No employee data.'}]),signal:AbortSignal.timeout(15000),
+  });
+  const result=await response.json();
+  if (!response.ok || !result.data?.[0]?.id) throw new Error(`Schedule announcement batch check failed: HTTP ${response.status}`);
+  console.log('SCHEDULE_POST_EMAIL_CHECK: provider accepted synthetic batch');
+}

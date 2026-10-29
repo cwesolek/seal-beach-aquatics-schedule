@@ -4,16 +4,19 @@ import { ApprovalRequiredError, requireViewer } from "@/lib/auth";
 import { demoSnapshot } from "@/lib/demo-data";
 import { defaultTimesheetDueDate, isoDate, payPeriodEnd, payPeriodStart } from "@/lib/date";
 import { ensureHourAdjustmentSchema } from "@/lib/hour-adjustments";
+import { validPeriodStart, periodOffsetFrom } from "@/lib/schedule-period";
 import { applyRecurringAssignments } from "@/lib/recurring-assignments";
 
 export async function GET(request: Request) {
-  const requestedOffset = Number(new URL(request.url).searchParams.get("periodOffset") ?? 0);
-  const periodOffset = Number.isInteger(requestedOffset) ? Math.max(-26, Math.min(26, requestedOffset)) : 0;
+  const params = new URL(request.url).searchParams;
+  const linkedStart = params.get("periodStart");
+  const requestedOffset = Number(params.get("periodOffset") ?? 0);
+  const periodOffset = validPeriodStart(linkedStart) ? periodOffsetFrom(linkedStart, isoDate(payPeriodStart())) : Number.isInteger(requestedOffset) ? Math.max(-26, Math.min(26, requestedOffset)) : 0;
   if (!hasDatabase()) return NextResponse.json(demoSnapshot(periodOffset));
   try {
     const viewer = await requireViewer();
-    const periodReference = payPeriodStart();
-    periodReference.setDate(periodReference.getDate() + periodOffset * 14);
+    const periodReference = validPeriodStart(linkedStart) ? new Date(`${linkedStart}T12:00:00`) : payPeriodStart();
+    if (!validPeriodStart(linkedStart)) periodReference.setDate(periodReference.getDate() + periodOffset * 14);
     const start = isoDate(payPeriodStart(periodReference));
     const end = isoDate(payPeriodEnd(periodReference));
     const endExclusive = new Date(`${end}T12:00:00`); endExclusive.setDate(endExclusive.getDate() + 1);
@@ -32,7 +35,7 @@ export async function GET(request: Request) {
     const timesheetEntriesQuery = viewer.role === "manager"
       ? sql`SELECT staff_id::text AS "staffId", row_type AS "rowType", entry_key AS "entryKey", hours::float AS hours FROM timesheet_entries WHERE period_start=${start}::date ORDER BY staff_id, row_type, entry_key`
       : sql`SELECT staff_id::text AS "staffId", row_type AS "rowType", entry_key AS "entryKey", hours::float AS hours FROM timesheet_entries WHERE staff_id=${viewer.id}::uuid AND period_start=${start}::date ORDER BY row_type, entry_key`;
-    const [staff, shifts, templates, swaps, availability, settings, hourAdjustments, pendingProfiles, aquaticsExclusions, timesheetEntries] = await Promise.all([
+    const [staff, shifts, templates, swaps, availability, settings, hourAdjustments, pendingProfiles, aquaticsExclusions, timesheetEntries, schedulePublications, schedulePublication] = await Promise.all([
       sql`SELECT id, name, first_name AS "firstName", last_name AS "lastName", email, phone, role, active FROM staff WHERE active = true AND approval_status='approved' ORDER BY lower(last_name), lower(first_name), lower(name)`,
       sql`SELECT s.id, s.template_id AS "templateId", to_char(s.shift_date, 'YYYY-MM-DD') AS date, s.title, to_char(s.starts_at, 'HH24:MI') AS "startsAt", to_char(s.ends_at, 'HH24:MI') AS "endsAt", s.required_staff AS "requiredStaff", COUNT(sa.id)::int AS "assignedCount", s.status, COALESCE(string_agg(a.name, ', ' ORDER BY sa.created_at), 'Open') AS assignee, COALESCE(json_agg(json_build_object('id', a.id::text, 'name', a.name, 'scheduledStartsAt', CASE WHEN sa.scheduled_starts_at IS NULL THEN NULL ELSE to_char(sa.scheduled_starts_at, 'HH24:MI') END, 'scheduledEndsAt', CASE WHEN sa.scheduled_ends_at IS NULL THEN NULL ELSE to_char(sa.scheduled_ends_at, 'HH24:MI') END, 'actualStartsAt', CASE WHEN sa.actual_starts_at IS NULL THEN NULL ELSE to_char(sa.actual_starts_at, 'HH24:MI') END, 'actualEndsAt', CASE WHEN sa.actual_ends_at IS NULL THEN NULL ELSE to_char(sa.actual_ends_at, 'HH24:MI') END, 'isRecurring', EXISTS (SELECT 1 FROM recurring_staff_assignments recurring WHERE recurring.template_id=s.template_id AND recurring.staff_id=a.id AND recurring.active=true AND recurring.starts_on<=s.shift_date)) ORDER BY sa.created_at) FILTER (WHERE a.id IS NOT NULL), '[]'::json) AS "assignedStaff" FROM shifts s LEFT JOIN shift_assignments sa ON sa.shift_id=s.id LEFT JOIN staff a ON a.id=sa.staff_id WHERE s.shift_date >= ${start}::date AND s.shift_date < ${isoDate(endExclusive)}::date GROUP BY s.id ORDER BY s.shift_date, s.starts_at`,
       sql`SELECT id, title, day_of_week AS "dayOfWeek", to_char(starts_at, 'HH24:MI') AS "startsAt", to_char(ends_at, 'HH24:MI') AS "endsAt", required_staff AS "requiredStaff" FROM recurring_shift_templates WHERE active = true ORDER BY day_of_week, starts_at`,
@@ -43,8 +46,10 @@ export async function GET(request: Request) {
       viewer.role === "manager" ? sql`SELECT id, name, email, to_char(created_at, 'YYYY-MM-DD') AS "requestedOn" FROM staff WHERE active=true AND approval_status='pending' ORDER BY created_at` : Promise.resolve([]),
       sql`SELECT to_char(week_start, 'YYYY-MM-DD') AS "weekStart" FROM aquatics_class_week_exclusions WHERE week_start BETWEEN ${start}::date - 6 AND ${end}::date`,
       timesheetEntriesQuery,
+      sql`SELECT to_char(period_start,'YYYY-MM-DD') AS "periodStart",to_char(period_end,'YYYY-MM-DD') AS "periodEnd",posted_at AS "postedAt" FROM schedule_publications ORDER BY posted_at DESC LIMIT 6`,
+      sql`SELECT p.id,to_char(p.period_start,'YYYY-MM-DD') AS "periodStart",to_char(p.period_end,'YYYY-MM-DD') AS "periodEnd",p.posted_at AS "postedAt",count(e.staff_id)::int AS "emailTotal",count(e.sent_at)::int AS "emailSent",p.sending_until>now() AS "sending" FROM schedule_publications p LEFT JOIN schedule_publication_emails e ON e.publication_id=p.id WHERE p.period_start=${start}::date GROUP BY p.id`,
     ]);
-    return NextResponse.json({ demo: false, viewer, staff, shifts, templates, swaps, availability, hourAdjustments, timesheetEntries, pendingProfiles, aquaticsExcludedWeeks: aquaticsExclusions.map((item) => item.weekStart), periodOffset, payPeriod: { start, end, dueDate: settings[0]?.dueDate ?? isoDate(defaultTimesheetDueDate(periodReference)), defaultDueDate: isoDate(defaultTimesheetDueDate(periodReference)) } });
+    return NextResponse.json({ demo: false, viewer, schedulePublications, schedulePublication: schedulePublication[0] ?? null, staff, shifts, templates, swaps, availability, hourAdjustments, timesheetEntries, pendingProfiles, aquaticsExcludedWeeks: aquaticsExclusions.map((item) => item.weekStart), periodOffset, payPeriod: { start, end, dueDate: settings[0]?.dueDate ?? isoDate(defaultTimesheetDueDate(periodReference)), defaultDueDate: isoDate(defaultTimesheetDueDate(periodReference)) } });
   } catch (error) {
     if (error instanceof ApprovalRequiredError) return NextResponse.json({ approvalRequired: true, rejected: error.rejected, viewer: { ...error.viewer, role: "staff" } }, { status: 403 });
     return NextResponse.json({ ...demoSnapshot(periodOffset), authRequired: true });

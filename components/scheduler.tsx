@@ -1,5 +1,6 @@
 "use client";
 
+import { schedulePath } from "@/lib/schedule-period";
 import { useClerk } from "@clerk/nextjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -14,7 +15,8 @@ type PendingProfile = { id: string; name: string; email: string; requestedOn: st
 type AvailabilityNote = { id: string; staff: string; note: string; status: string; startsOn: string; endsOn: string };
 type TimesheetEntry = { staffId?: string; rowType: TimesheetRowType; entryKey: string; hours: number };
 type TimesheetRowType = "regular" | "sick" | "overtime" | "other";
-type Snapshot = { demo: boolean; approvalRequired?: boolean; rejected?: boolean; viewer: { id: string; name: string; firstName: string; lastName: string; email: string; phone: string | null; role: string }; staff: Staff[]; shifts: Shift[]; templates?: ShiftTemplate[]; swaps: Swap[]; availability: AvailabilityNote[]; hourAdjustments?: HourAdjustment[]; timesheetEntries?: TimesheetEntry[]; pendingProfiles?: PendingProfile[]; aquaticsExcludedWeeks?: string[]; payPeriod: PayPeriod; periodOffset?: number };
+type SchedulePublication = { id?: string; periodStart: string; periodEnd: string; postedAt: string; emailTotal?: number; emailSent?: number; sending?: boolean };
+type Snapshot = { schedulePublication?: SchedulePublication | null; schedulePublications?: SchedulePublication[]; demo: boolean; approvalRequired?: boolean; rejected?: boolean; viewer: { id: string; name: string; firstName: string; lastName: string; email: string; phone: string | null; role: string }; staff: Staff[]; shifts: Shift[]; templates?: ShiftTemplate[]; swaps: Swap[]; availability: AvailabilityNote[]; hourAdjustments?: HourAdjustment[]; timesheetEntries?: TimesheetEntry[]; pendingProfiles?: PendingProfile[]; aquaticsExcludedWeeks?: string[]; payPeriod: PayPeriod; periodOffset?: number };
 type ApiPayload = { ok?: boolean; error?: string; message?: string; shift?: Shift };
 type PersonalShift = Shift & { sourceShifts: Shift[] };
 
@@ -154,13 +156,15 @@ function combineConnectedShifts(shifts: Shift[]): PersonalShift[] {
   return combined;
 }
 
-export default function Scheduler() {
-  const [tab, setTab] = useState<Tab>("Dashboard"); const [data, setData] = useState<Snapshot | null>(null); const [notice, setNotice] = useState(""); const [periodOffset, setPeriodOffset] = useState(0);
+export default function Scheduler({ initialPeriodStart = null }: { initialPeriodStart?: string | null }) {
+  const [tab, setTab] = useState<Tab>(initialPeriodStart ? "Schedule" : "Dashboard"); const [data, setData] = useState<Snapshot | null>(null); const [notice, setNotice] = useState(""); const [periodOffset, setPeriodOffset] = useState(0);
+  const [linkedPeriodStart, setLinkedPeriodStart] = useState(initialPeriodStart);
+  const navigatePeriod = (offset: number) => { setLinkedPeriodStart(null); setPeriodOffset(offset); };
   const loadVersion = useRef(0);
   const refresh = async () => {
     const version = ++loadVersion.current;
     try {
-      const response = await fetch(`/api/schedule?periodOffset=${periodOffset}`, { cache: "no-store" });
+      const response = await fetch(`/api/schedule?${linkedPeriodStart ? `periodStart=${linkedPeriodStart}` : `periodOffset=${periodOffset}`}`, { cache: "no-store" });
       const body = await response.json();
       if (version === loadVersion.current) setData(body);
     } catch { if (version === loadVersion.current) setNotice("Could not load the schedule."); }
@@ -171,7 +175,7 @@ export default function Scheduler() {
     const onFocus = () => { refresh(); };
     window.addEventListener("focus", onFocus);
     return () => { ++loadVersion.current; window.clearInterval(timer); window.removeEventListener("focus", onFocus); };
-  }, [periodOffset]);
+  }, [periodOffset, linkedPeriodStart]);
   const openShifts = (data?.shifts ?? []).filter((shift) => shift.status === "open");
   const scheduledHours = useMemo(() => sumAssignmentHours(assignmentHourTotals(data?.shifts ?? [], false)), [data]);
   async function api(path: string, method: string, body?: unknown) {
@@ -198,11 +202,12 @@ export default function Scheduler() {
     <section className="wrap"><div className="title-row"><div><p className="eyebrow">Operations center</p><h1>Clear coverage, calmer days.</h1><p className="muted">Plan the pay period, coordinate changes, and keep every lifeguard in the loop.</p></div>{data.demo && <div className="preview-note">Sign in to use the secure staff schedule and save changes.</div>}</div>
       <nav className="tabs" aria-label="Scheduling areas">{visibleTabs.map((item) => <button key={item} className={activeTab === item ? "tab active" : "tab"} onClick={() => setTab(item)}>{item}</button>)}</nav>
       {incomingSwapCount > 0 && <div className="notice swap-alert"><span><strong>Shift request waiting:</strong> someone requested an exchange or coverage.</span><button onClick={() => setTab("Swaps")}>Review and accept</button></div>}
+      {(data.schedulePublications ?? []).length > 0 && <section className="notice posted-schedules" aria-label="Posted schedules"><strong>Posted schedules</strong>{data.schedulePublications?.map(publication => <a key={publication.periodStart} href={schedulePath(publication.periodStart)}>{readableDate(publication.periodStart)} – {readableDate(publication.periodEnd)} · View schedule</a>)}</section>}
       {notice && <p className="notice">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></p>}
       {activeTab === "Dashboard" && data.viewer.role === "manager" && <><ProfileApprovals profiles={data.pendingProfiles ?? []} api={api} /><Dashboard data={data} openCount={openShifts.length} hours={scheduledHours} setTab={setTab} api={api} /></>}
-      {activeTab === "My shifts" && <MyShifts data={data} api={api} periodOffset={periodOffset} setPeriodOffset={setPeriodOffset} />}
-      {activeTab === "Timesheet" && <Timesheet data={data} api={api} periodOffset={periodOffset} setPeriodOffset={setPeriodOffset} />}
-      {activeTab === "Schedule" && <Schedule data={data} api={api} periodOffset={periodOffset} setPeriodOffset={setPeriodOffset} />}
+      {activeTab === "My shifts" && <MyShifts data={data} api={api} periodOffset={data.periodOffset ?? periodOffset} setPeriodOffset={navigatePeriod} />}
+      {activeTab === "Timesheet" && <Timesheet data={data} api={api} periodOffset={data.periodOffset ?? periodOffset} setPeriodOffset={navigatePeriod} />}
+      {activeTab === "Schedule" && <Schedule data={data} api={api} periodOffset={data.periodOffset ?? periodOffset} setPeriodOffset={navigatePeriod} />}
       {activeTab === "Staff" && <Directory data={data} api={api} />}
       {activeTab === "Availability" && <Availability data={data} api={api} />}
       {activeTab === "Open shifts" && data.viewer.role === "manager" && <OpenShifts shifts={openShifts} api={api} />}
@@ -318,13 +323,30 @@ function SwapRequestForm({ shift, data, api, coverageName }: { shift: Shift; dat
   return <form className="swap-request-form" onSubmit={async (event) => { event.preventDefault(); const selected = options.find((option) => option.value === requestedAssignment); if (!selected) return; setSending(true); const saved = await api("/api/swaps", "POST", { shiftId: shift.id, recipientShiftId: selected.shiftId, recipientId: selected.staffId }); setSending(false); if (!saved) return; setMode(null); setRequestedAssignment(""); }}><p className="muted">Offer this shift in exchange for a specific coworker&apos;s shift.</p><label>Shift you want<select value={requestedAssignment} onChange={(event) => setRequestedAssignment(event.target.value)} required><option value="">Choose a coworker&apos;s shift…</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>{!options.length && <p className="muted">There are no eligible coworker shifts in this pay period.</p>}<div><button type="submit" disabled={sending || !requestedAssignment}>Send exchange request</button><button type="button" className="secondary" onClick={() => setMode(null)}>Cancel</button></div></form>;
 }
 function DueDateForm({ payPeriod, api }: { payPeriod: PayPeriod; api: (path: string, method: string, body?: unknown) => Promise<boolean> }) { const [editing, setEditing] = useState(false); const [dueDate, setDueDate] = useState(payPeriod.dueDate); useEffect(() => setDueDate(payPeriod.dueDate), [payPeriod.dueDate]); if (!editing) return <button className="secondary small-button" onClick={() => setEditing(true)}>Change deadline</button>; return <form className="due-date-form" onSubmit={(event) => { event.preventDefault(); api("/api/pay-period", "PATCH", { dueDate, periodStart: payPeriod.start }); setEditing(false); }}><label>Due date<input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required /></label><button type="submit" className="small-button">Save</button><button type="button" className="secondary small-button" onClick={() => { setDueDate(payPeriod.dueDate); setEditing(false); }}>Cancel</button></form> }
+function PostScheduleControl({ data, api }: { data: Snapshot; api: (path: string, method: string, body?: unknown) => Promise<boolean> }) {
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const publication = data.schedulePublication;
+  const remaining = publication ? (publication.emailTotal ?? 0) - (publication.emailSent ?? 0) : 0;
+  const posting = busy || Boolean(publication?.sending);
+  useEffect(() => setConfirming(false), [data.payPeriod.start]);
+  async function post() {
+    if (posting) return;
+    setBusy(true);
+    try { if (await api("/api/schedule/post", "POST", { periodStart: data.payPeriod.start })) setConfirming(false); }
+    finally { setBusy(false); }
+  }
+  return <div className="post-schedule-control">
+    {publication ? <><strong>Schedule posted</strong><span>Posted {new Date(publication.postedAt).toLocaleDateString("en-US")} · {publication.emailSent ?? 0} of {publication.emailTotal ?? 0} staff emails sent</span>{(remaining > 0 || posting) && <button disabled={posting} onClick={post}>{posting ? "Sending notifications…" : "Retry unsent emails"}</button>}</> : confirming ? <><p>Post the {readableDate(data.payPeriod.start)} – {readableDate(data.payPeriod.end)} schedule and notify all active, approved staff by email and in the app?</p><button disabled={posting} onClick={post}>{posting ? "Posting and notifying…" : "Post and notify staff"}</button><button className="secondary" disabled={posting} onClick={() => setConfirming(false)}>Cancel</button></> : <><span>Ready for staff to review this pay period?</span><button onClick={() => setConfirming(true)}>Post schedule</button></>}
+  </div>;
+}
 function Schedule({ data, api, periodOffset, setPeriodOffset }: { data: Snapshot; api: (path: string, method: string, body?: unknown) => Promise<boolean>; periodOffset: number; setPeriodOffset: (offset: number) => void }) {
   const byDate = Object.groupBy(data.shifts, (shift) => shift.date);
   const dates = Array.from({ length: 14 }, (_, index) => { const date = new Date(`${data.payPeriod.start}T12:00:00`); date.setDate(date.getDate() + index); return date.toISOString().slice(0, 10); });
   const weekStarts = [dates[0], dates[7]]; const excludedAquaticsWeeks = new Set(data.aquaticsExcludedWeeks ?? []);
   const manager = data.viewer.role === "manager";
   return <>
-    <section className="card schedule-head"><div><p className="eyebrow">{manager ? "Manager schedule builder" : "Team calendar"}</p><h2>{periodOffset < 0 ? "Previous" : periodOffset > 0 ? "Future" : "Current"} pay-period schedule</h2><p className="muted">{readableDate(data.payPeriod.start)} through {readableDate(data.payPeriod.end)} · Sunday–Saturday, two-week period.</p>{manager && <p className="builder-tip">Standard coverage shifts are ready in each day below. Assign staff or add non-standard shifts for the selected pay period.</p>}<div className="schedule-controls"><button className="secondary" onClick={() => setPeriodOffset(periodOffset - 1)} disabled={periodOffset <= -26}>Previous pay period</button><button className="secondary" onClick={() => setPeriodOffset(0)} disabled={periodOffset === 0}>Current pay period</button><button className="secondary" onClick={() => setPeriodOffset(periodOffset + 1)} disabled={periodOffset >= 26}>Next pay period</button>{manager && <button onClick={() => printTarget("roster")}>Print roster</button>}</div>{manager && <AquaticsWeekControls weekStarts={weekStarts} excludedWeeks={excludedAquaticsWeeks} api={api} />}</div>{manager && <ShiftForm staff={data.staff} payPeriod={data.payPeriod} onSubmit={(body) => api("/api/shifts", "POST", body)} />}</section>
+    <section className="card schedule-head"><div><p className="eyebrow">{manager ? "Manager schedule builder" : "Team calendar"}</p><h2>{periodOffset < 0 ? "Previous" : periodOffset > 0 ? "Future" : "Current"} pay-period schedule</h2><p className="muted">{readableDate(data.payPeriod.start)} through {readableDate(data.payPeriod.end)} · Sunday–Saturday, two-week period.</p>{data.schedulePublication && <p className="schedule-posted-badge">Schedule posted · {new Date(data.schedulePublication.postedAt).toLocaleDateString("en-US")}</p>}{manager && <p className="builder-tip">Standard coverage shifts are ready in each day below. Assign staff or add non-standard shifts for the selected pay period.</p>}<div className="schedule-controls"><button className="secondary" onClick={() => setPeriodOffset(periodOffset - 1)} disabled={periodOffset <= -26}>Previous pay period</button><button className="secondary" onClick={() => setPeriodOffset(0)} disabled={periodOffset === 0}>Current pay period</button><button className="secondary" onClick={() => setPeriodOffset(periodOffset + 1)} disabled={periodOffset >= 26}>Next pay period</button>{manager && <button onClick={() => printTarget("roster")}>Print roster</button>}</div>{manager && <PostScheduleControl key={data.payPeriod.start} data={data} api={api} />}{manager && <AquaticsWeekControls weekStarts={weekStarts} excludedWeeks={excludedAquaticsWeeks} api={api} />}</div>{manager && <ShiftForm staff={data.staff} payPeriod={data.payPeriod} onSubmit={(body) => api("/api/shifts", "POST", body)} />}</section>
     <section className="schedule-grid">{dates.map((date, index) => {
       const dayShifts = byDate[date] ?? [];
       const weekday = new Date(`${date}T12:00:00`).getDay();
