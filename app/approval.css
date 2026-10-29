@@ -990,3 +990,9 @@
     font-size: 8pt;
   }
 }
+
+.post-schedule-control { margin: 18px 0; padding: 16px; background: #edf6f1; border: 1px solid #b8d7c4; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.post-schedule-control p { flex-basis: 100%; margin: 0; }
+.posted-schedules { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+.posted-schedules a { color: #164d77; text-decoration: underline; }
+.schedule-posted-badge { color: #24613b; font-weight: 700; }
